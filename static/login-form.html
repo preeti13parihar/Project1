@@ -1,0 +1,133 @@
+<!-- Developer name: Jairon Landa (jaironlanda.com) -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Login</title>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.2.32.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Load bootstrap 3 -->
+    <link rel="stylesheet" type="text/css" media="screen" href="/static/assets/bootstrap/css/bootstrap.css" />
+    <!-- Custom style -->
+    <style>
+        body{
+            background-color: #3498db;
+        }
+        .panel-style{
+            padding-top: 70px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="col-md-4 col-md-offset-4 panel-style">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <strong>
+                                <span class="glyphicon glyphicon-log-in" aria-hidden="true"></span> Login
+                            </strong>
+                        </h3>
+                </div>
+                <div class="panel-body">
+                    <form action="" method="post">
+                        <div class="form-group">
+                            <label for="email">E-mail</label>
+                            <input type="email" name="email" id="email" class="form-control" required="required" placeholder="yourmail@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="username">User Name</label>
+                            <input type="text" name="username" id="username" class="form-control" required="required" placeholder="username">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" name="pass" id="password" class="form-control" required="required">
+                            <a href="./static/forgot-pswd-form.html">Forgot password</a> | <a href="register-form.html">Register</a>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="button" class="btn btn-primary btn-block" onclick="login(this.form)">
+                            <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
+                             Submit</button>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" value="remember_me">
+                                    Remember me
+                                </label>
+                            </div>
+                        </div>
+                    </form> 
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/static/assets/jquery/jquery-3.3.1.min.js"></script>
+    <script src="/static/assets/bootstrap/js/bootstrap.js"></script>
+    <script>
+        function login(form){
+            console.log(form.email.value);
+            console.log(form.pass.value);
+            console.log(form.username.value);
+
+            username = form.username.value;
+            email = form.email.value;
+            password = form.pass.value;
+
+            $.ajax({
+                type: "POST",
+                url: "loginUser.php",
+                data : "username="+username+"&password="+password,
+                dataType: "json",
+                beforeSend: function (xhr) {
+                  xhr.setRequestHeader ("Authorization", "Basic " + btoa(username + ":" + password));
+                },
+                success: function (data) {
+                var success = data['success'];
+                if(success == false){
+                    var error = data['message'];
+                    alert(error); // just in case somebody to click on share witout writing anything :
+                }
+                if(success == true) {
+                }
+                                        }
+
+            });//end ajax             
+        }
+    </script>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.12.min.js">
+        window.onload = function(){
+            var authenticationData = {
+                    Username : 'testuser',
+                    Password : '@Oracle21',
+                };
+                var authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
+                var poolData = { UserPoolId : 'us-east-us-east-1_6NfPeeDgL',
+                    ClientId : '77dmk99o99i7r6b4su21ekel53'
+                };
+                var userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+                var userData = {
+                    Username : 'testuser',
+                    Pool : userPool
+                };
+                var cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+                cognitoUser.authenticateUser(authenticationDetails, {
+                    onSuccess: function (result) {
+                        var accessToken = result.getAccessToken().getJwtToken();
+
+                        /* Use the idToken for Logins Map when Federating User Pools with identity pools or when passing through an Authorization Header to an API Gateway Authorizer */
+                        var idToken = result.idToken.jwtToken;
+                        console.log(result);
+                    },
+
+                    onFailure: function(err) {
+                        alert(err);
+                    },
+
+            });   
+        };         
+    </script>
+</body>
+</html>
