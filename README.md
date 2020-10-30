@@ -1,6 +1,6 @@
 # pbox-server
 
-This is mini version of drop box, It has features like upload file, delete file and update file.
+This is a Cloud Content Storage And Delivery Infrastructure, It has features like upload file, delete file and update file.
 
 Technology Stack used in building this project are as follows:
 
