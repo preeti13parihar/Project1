@@ -29,10 +29,10 @@ Pbox built upon following technologies:
 ![PBox Sign-up Page](Sign-up.png)
 
 # Sign-in Page
-![PBox Sign-in Page](log-in.png)
+![PBox Sign-in Page](Log-in.png)
 
 # Sign-in Success Massage
-![PBox Sign-in success Massage](Sign-in success.png)
+![PBox Sign-in success Massage](Sign-in-success.png)
 
 # Dashboard Upload/Delete/Download Page
-![PBox Dashboard Upload/Delete/Download Page](Dashboard Upload/Delete/Download.png)
+![PBox Dashboard Upload/Delete/Download Page](Dashboard.png)
