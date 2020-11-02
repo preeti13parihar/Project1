@@ -2,6 +2,8 @@
 
 PBox is a cloud base content storage service. User can preserve their content on cloud securely and safely. User would signup with email, username and password. Once sign up process is complete user should receive a verification code on provided email. After email verification user can use the service.
 
+Youtube Video Link: https://youtu.be/Fkxpg-q-5JM
+
 Pbox built upon following technologies:
 
 1. Flask (Python)
