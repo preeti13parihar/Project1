@@ -18,14 +18,15 @@ PBOX_REGION = env("PBOX_REGION") if env("PBOX_REGION") else os.getenv("PBOX_REGI
 PBOX_S3_URL = env("PBOX_S3_URL") if env("PBOX_S3_URL") else os.getenv("PBOX_S3_URL", None)
 
 # Initialize a session using DigitalOcean Spaces.
-session = boto3.session.Session()
+session = boto3.Session(aws_access_key_id=PBOX_AWS_KEY, aws_secret_access_key=PBOX_AWS_SECRET)
+
 client = session.client('s3',
                         region_name=PBOX_REGION,
                         endpoint_url=PBOX_S3_URL,
                         aws_access_key_id=PBOX_AWS_KEY,
                         aws_secret_access_key=PBOX_AWS_SECRET)
 
-s3_obj = boto3.resource('s3')
+s3_obj = session.resource('s3')
 s3_bucket = s3_obj.Bucket(PBOX_BUCKET)
 
 def list_all_s3_data(username):
@@ -34,18 +35,66 @@ def list_all_s3_data(username):
         print(my_bucket_object)                          
 
 
-def s3_get_object(filepath):
-    print(filepath)
-    file = client.get_object(Bucket=PBOX_BUCKET, Key=filepath)
-    return file
+def get_all_versions(bucket, filename):
+    # s3 = boto3.client('s3')
+    keys = ["Versions", "DeleteMarkers"]
+    results = to_delete = []
+    for k in keys:
+        try:
+            response = client.list_object_versions(Bucket=bucket)[k]
+            print(response)
+            to_delete = [r["VersionId"] for r in response if r["Key"] == filename]
+        except Exception as e:
+            print(str(e))
+
+            continue
+
+    results.extend(to_delete)
+    return results
+
+
+def delete_file_s3(key, filename):
+    # flag = True
+    # for version in get_all_versions(PBOX_BUCKET, filename):
+    #     try:
+    #         resp = client.delete_object(Bucket=PBOX_BUCKET, Key=filename, VersionId=version)
+    #         print(resp)
+    #     except Exception as e:
+    #         print("Error while deleting from S3:", str(e))
+    #         flag = False
+
+    # resp = client.delete_object(
+    #     Bucket=PBOX_BUCKET,
+    #     Key=key
+    # )
+
+    resp = s3_obj.Object(PBOX_BUCKET, key).delete()
+    print(resp)
+    
+    return resp
 
 def download_file(key, filename):
+    obj = s3_obj.Object(PBOX_BUCKET, key)
+    resp = obj.get()
+    print(resp)
+
+    if resp and ("HTTPHeaders" in resp["ResponseMetadata"]):
+        headers = {
+            "content-disposition": "attachment;filename=" + filename,
+            "content-type": resp["ResponseMetadata"]['HTTPHeaders']['content-type'] ,
+            "content-length": resp["ResponseMetadata"]['HTTPHeaders']['content-length']
+        }
+
+        return resp['Body'].read(), headers
+
+    return None, None
     # with open('hello.md', 'wb') as data:
     #     s3_bucket.download_fileobj('hello.md', data)    
     #     print(data)
-    resp = s3_bucket.download_file(key, filename)
-    data = open(filename, mode="rb")
-    return data
+
+    # resp = s3_bucket.download_file(key, filename)
+    # data = open(filename, mode="rb")
+    # return data
 
 def list_all_data(user):
     print(PBOX_BUCKET)
@@ -117,25 +166,3 @@ def get_objects_in_folder(folderpath):
         )
     return objects
 
-
-def get_folders():
-    """Retrieve all folders within a specified directory.
-
-    1. Set bucket name.
-    2. Set delimiter (a character that our target files have in common).
-    3. Set folder path to objects using "Prefix" attribute.
-    4. Create list of all recursively discovered folder names.
-    5. Return list of folders.
-    """
-    get_folder_objects = client.list_objects_v2(
-        Bucket='hackers',
-        Delimiter='',
-        EncodingType='url',
-        MaxKeys=1000,
-        Prefix='posts/',
-        ContinuationToken='',
-        FetchOwner=False,
-        StartAfter=''
-        )
-    folders = [item['Key'] for item in get_folder_objects['Contents']]
-    return folders

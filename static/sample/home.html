@@ -26,51 +26,20 @@
     />
     <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
     <script src="/static/sample/dist/amazon-cognito-auth.min.js"></script>
+    <script src="/static/sample/js/jquery.fileDownload.js"></script>
+    <script src="/static/sample/js/pboxProd.js"></script>
     <!-- To enable the advanced security feature -->
     <!-- <script src="https://amazon-cognito-assets.<region>.amazoncognito.com/amazon-cognito-advanced-security-data.min.js"></script> -->
     <!-- E.g. -->
     <!-- <script src="https://amazon-cognito-assets.us-east-1.amazoncognito.com/amazon-cognito-advanced-security-data.min.js"></script> -->
   </head>
 
-  <body onload="onLoad()">
+  <body onload="initAuth();">
     <h1>PBOX - Online Content Storage Service</h1>
-  <!--
-    <div class="centeredText">
-      <p id="introPara" title="About PBOX"></p>
-    </div>
-
-    <div><br /></div>
     <div>
-      <p id="statusNotAuth" title="Status">Sign-In to Continue</p>
-      <p id="statusAuth" title="Status">You have Signed-In</p>
+      <input type="button" id="signout" value="Sign Out" onClick="signOut();"/>
     </div>
-
-    <div class="tabsWell">
-      <div id="startButtons">
-        <div class="button">
-          <a
-            class="nav-tabs"
-            id="signInButton"
-            href="javascript:void(0)"
-            title="Sign in"
-            >Sign In</a
-          >
-        </div>
-      </div>
-    </div>
-
-    <br /><br />
-  
-
-    <div>
-      <form action="/uploader" method="post" enctype="multipart/form-data">
-        <input type="file" id="file" name="file" />
-        <input type="hidden" id="authTokens" name="authTokens" value="" />
-        <input type="submit" />
-      </form>
-    </div>
-
--->
+ 
     <br /><br />
     <br /><br />
     <div>
@@ -130,9 +99,9 @@
           <td>
             <input
               type="button"
-              id="{{ file.filekey }}"
+              id="{{ file.filekey }} : {{ file.id }}"
               name="delete"
-              value="Delete"
+              value="Delete" onclick="deleteFile(this);"
             />
           </td>
         </tr>
@@ -167,22 +136,52 @@
         });
       });
 
+      var auth;
+      
+      function initAuth(){
+        auth = initCognitoSDK();
+      }
+
+      function signOut(){
+        auth.signOut();
+        document.location.href="/";
+      }
+
+      function deleteFile(obj){
+        $.ajax({
+              type: "GET",
+              url: "/deleteFile?key="+obj.id,
+              //data: form_data,
+              //contentType: "application/download",
+              cache: false,
+              processData: false,
+              success: function (data) {
+                window.location.href = window.location.href;
+                console.log("File deleted: "+ data);
+              },
+          });
+
+        
+      }
 
       function downloadFile(obj){
         
         console.log(obj.id);
-                  $.ajax({
-            type: "POST",
-            url: "/downloadFile?key="+obj.id,
-            //data: form_data,
-            contentType: "application/download",
-            cache: false,
-            processData: false,
-            success: function (data) {
-              //window.location.href = window.location.href;
-              console.log("Success!");
+
+        $.fileDownload("/downloadFile?key="+obj.id, {
+            successCallback: function (url) {
+        
+                alert('You just got a file download dialog or ribbon for this URL :' + url);
             },
-          });
+            failCallback: function (html, url) {
+        
+                alert('Your file download just failed for this URL:' + url + '\r\n' +
+                        'Here was the resulting error HTML: \r\n' + html
+                        );
+            }
+        }); 
+        /*       
+          */
       }
       // check file size before upload
       var uploadField = document.getElementById("upload-file");
@@ -195,126 +194,16 @@
         }
       };
 
-      // Operations when the web page is loaded.
-      function onLoad() {
-        var i, items, tabs;
-        items = document.getElementsByClassName("tab-pane");
-        for (i = 0; i < items.length; i++) {
-          items[i].style.display = "none";
-        }
-        document.getElementById("statusNotAuth").style.display = "block";
-        document.getElementById("statusAuth").style.display = "none";
-        // Initiatlize CognitoAuth object
-        var auth = initCognitoSDK();
-        document
-          .getElementById("signInButton")
-          .addEventListener("click", function () {
-            userButton(auth);
-          });
-        var curUrl = window.location.href;
-        auth.parseCognitoWebResponse(curUrl);
-      }
-
-      // Operation when tab is closed.
-      function closeTab(tabName) {
-        document.getElementById(tabName).style.display = "none";
-      }
-
-      // Operation when tab is opened.
-      function openTab(tabName) {
-        document.getElementById(tabName).style.display = "block";
-      }
-
-      // Operations about toggle tab.
-      function toggleTab(tabName) {
-        if (document.getElementById("usertab").style.display == "none") {
-          document.getElementById("usertab").style.display = "block";
-          document.getElementById("tabIcon").innerHTML = "_";
-        } else {
-          document.getElementById("usertab").style.display = "none";
-          document.getElementById("tabIcon").innerHTML = "+";
-        }
-      }
-
-      // Operations when showing message.
-      function showMessage(msgTitle, msgText, msgDetail) {
-        var msgTab = document.getElementById("message");
-        document.getElementById("messageTitle").innerHTML = msgTitle;
-        document.getElementById("messageText").innerHTML = msgText;
-        document.getElementById("messageDetail").innerHTML = msgDetail;
-        msgTab.style.display = "block";
-      }
-
-      // Perform user operations.
-      function userButton(auth) {
-        var state = document.getElementById("signInButton").innerHTML;
-        if (state === "Sign Out") {
-          document.getElementById("signInButton").innerHTML = "Sign In";
-          auth.signOut();
-          showSignedOut();
-        } else {
-          auth.getSession();
-        }
-      }
-
-      // Operations when signed in.
-      function showSignedIn(session) {
-        document.getElementById("statusNotAuth").style.display = "none";
-        document.getElementById("statusAuth").style.display = "block";
-        document.getElementById("signInButton").innerHTML = "Sign Out";
-        if (session) {
-          var idToken = session.getIdToken().getJwtToken();
-          if (idToken) {
-            var payload = idToken.split(".")[1];
-            var tokenobj = JSON.parse(atob(payload));
-            var formatted = JSON.stringify(tokenobj, undefined, 2);
-            document.getElementById("idToken").value = formatted;
-            //document.getElementById("idtoken").innerHTML = formatted;
-          }
-          var accToken = session.getAccessToken().getJwtToken();
-          if (accToken) {
-            var payload = accToken.split(".")[1];
-            var tokenobj = JSON.parse(atob(payload));
-            var formatted = JSON.stringify(tokenobj, undefined, 2);
-            console.log("username", tokenobj.username);
-            console.log("username", tokenobj["username"]);
-            document.getElementById("username").value = tokenobj["username"];
-            document.getElementById("accToken").value = formatted;
-            //document.getElementById("acctoken").innerHTML = formatted;
-          }
-          var refToken = session.getRefreshToken().getToken();
-          if (refToken) {
-            document.getElementById("refToken").value = refToken.substring(
-              1,
-              20
-            );
-            //document.getElementById("reftoken").innerHTML = refToken.substring(1,20);
-          }
-        }
-        //openTab("userdetails");
-      }
-
-      // Operations when signed out.
-      function showSignedOut() {
-        document.getElementById("statusNotAuth").style.display = "block";
-        document.getElementById("statusAuth").style.display = "none";
-        document.getElementById("idtoken").innerHTML = " ... ";
-        document.getElementById("acctoken").innerHTML = " ... ";
-        document.getElementById("reftoken").innerHTML = " ... ";
-        closeTab("userdetails");
-      }
-
       // Initialize a cognito auth object.
       function initCognitoSDK() {
         var authData = {
-          ClientId: "77dmk99o99i7r6b4su21ekel53", // Your client id here
-          //AppWebDomain: "localhost:5001",
-          AppWebDomain: "pbox.auth.us-east-1.amazoncognito.com", // Exclude the "https://" part.
+          ClientId: pbox["ClientId"], // Your client id here
+          AppWebDomain: pbox["AppWebDomain"],
           TokenScopesArray: ["openid"], // like ['openid','email','phone']...
-          RedirectUriSignIn: "https://localhost:9000/",
-          RedirectUriSignOut: "https://localhost:9000/",
+          RedirectUriSignIn: pbox["RedirectUriSignIn"],
+          RedirectUriSignOut: pbox["RedirectUriSignOut"],
           //IdentityProvider: "https://pbox.auth.us-east-1.amazoncognito.com",
-          UserPoolId: "us-east-1_6NfPeeDgL",
+          UserPoolId: pbox["UserPoolId"],
           // AdvancedSecurityDataCollectionFlag : false//<TODO: boolean value indicating whether you want to enable advanced security data collection>
         };
         var auth = new AmazonCognitoIdentity.CognitoAuth(authData);
