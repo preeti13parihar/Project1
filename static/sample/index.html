@@ -18,7 +18,7 @@
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
-    <title>Cognito Auth JS SDK Sample</title>
+    <title>PBOX - Online Content Storage Service</title>
     <meta charset="UTF-8" />
     <link
       rel="stylesheet"
@@ -26,6 +26,7 @@
     />
     <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
     <script src="/static/sample/dist/amazon-cognito-auth.min.js"></script>
+    <script src="/static/sample/js/pboxLocal.js"></script>
     <!-- To enable the advanced security feature -->
     <!-- <script src="https://amazon-cognito-assets.<region>.amazoncognito.com/amazon-cognito-advanced-security-data.min.js"></script> -->
     <!-- E.g. -->
@@ -200,6 +201,8 @@
         document.getElementById("statusAuth").style.display = "none";
         // Initiatlize CognitoAuth object
         var auth = initCognitoSDK();
+        localStorage.setItem("authObj", auth);
+
         document
           .getElementById("signInButton")
           .addEventListener("click", function () {
@@ -303,7 +306,7 @@
           //document.getElementById("username").value = tokenobj["username"];
           //console.log("username", document.getElementById("username").value);
           window.location.href =
-            "https://localhost:9000/homepage?user=" + tokenobj["username"];
+            pbox["PboxHost"] + "/homepage?user=" + tokenobj["username"];
           //document.getElementById("accToken").value = formatted;
           //document.getElementById("acctoken").innerHTML = formatted;
         }
@@ -311,14 +314,13 @@
       // Initialize a cognito auth object.
       function initCognitoSDK() {
         var authData = {
-          ClientId: "77dmk99o99i7r6b4su21ekel53", // Your client id here
-          //AppWebDomain: "localhost:5001",
-          AppWebDomain: "pbox.auth.us-east-1.amazoncognito.com", // Exclude the "https://" part.
+          ClientId: pbox["ClientId"], // Your client id here
+          AppWebDomain: pbox["AppWebDomain"],
           TokenScopesArray: ["openid"], // like ['openid','email','phone']...
-          RedirectUriSignIn: "https://localhost:9000/",
-          RedirectUriSignOut: "https://localhost:9000/",
+          RedirectUriSignIn: pbox["RedirectUriSignIn"],
+          RedirectUriSignOut: pbox["RedirectUriSignOut"],
           //IdentityProvider: "https://pbox.auth.us-east-1.amazoncognito.com",
-          UserPoolId: "us-east-1_6NfPeeDgL",
+          UserPoolId: pbox["UserPoolId"],
           // AdvancedSecurityDataCollectionFlag : false//<TODO: boolean value indicating whether you want to enable advanced security data collection>
         };
         var auth = new AmazonCognitoIdentity.CognitoAuth(authData);

@@ -8,7 +8,7 @@ from flask import Response
 
 # from flask_cors import CORS
 from db import db
-
+from s3 import s3_api
 
 # project_folder = os.path.expanduser('~/Project1')  # adjust as appropriate
 # load_dotenv(os.path.join(".", '.env'))
@@ -54,21 +54,35 @@ def homepage():
 def index():
     return render_template('./sample/index.html')
 
-@app.route('/downloadFile', methods=['POST'])
+@app.route('/downloadFile', methods=['GET'])
 def downloadFile():
     global username
     key = request.args.get("key")
     n = key.rindex("/")
     filename = key[n+1:]
     print(username)
-    file = s3_api.download_file(key, filename)
-    return Response(
-        file,
-        mimetype='text/plain',
-        headers={"Content-Disposition": f"attachment;filename={filename}"}
-    )    
-    # return jsonify({"status": "sucess", "msg": "Hello"}), 200
+    body, headers = s3_api.download_file(key, filename)
+    if body:
+        return Response(body, mimetype=headers["content-type"], headers=headers)
+        
+    return jsonify({"status": "failed"}), 500
 
+
+@app.route('/deleteFile', methods=['GET'])
+def deleteFile():
+    global username
+    key = request.args.get("key")
+    key, id = key.rsplit(":", 1)
+    n = key.rindex("/")
+    filename = key[n+1:]
+    flag = s3_api.delete_file_s3(key, filename)
+
+    resp, status = db.delete(id)
+    if status != 204 or (not flag):
+        print(f"Error occured while deleting file from DB: {key}, id:{id}, s3_flag:{flag}")
+        return jsonify({"status": "failed"}), 500
+
+    return jsonify({"status": "success", "msg": resp}), 204
     # s3_api.download_file()
 
 @app.route('/uploader', methods=['POST'])
@@ -285,6 +299,6 @@ if __name__ == "__main__":
     
     # print(resp)
 
-    app.run(port=9000, ssl_context="adhoc")
+    app.run(host="127.0.0.1", port=9000, ssl_context="adhoc")
     
 
